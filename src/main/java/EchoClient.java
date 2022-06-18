@@ -1,6 +1,7 @@
-import models.Client;
+package main.java;
 
-import javax.xml.crypto.Data;
+import main.java.models.Client;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
@@ -61,9 +62,6 @@ public class EchoClient {
                     );
 
                     if (bytesHello.size() < 32) {
-                        System.out.println("Atem is setup. Starting java listener...");
-                        System.out.println("Starting get init data from Atem...\n");
-
                         //init bytes from atem
                         if (clients.size() == 0) {
                             addNewClient(datagramPacket);

@@ -1,4 +1,4 @@
-package models;
+package main.java.models;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;
