@@ -1,4 +1,4 @@
-package main.java.models;
+package tech.yakov.AtemProxy.models;
 
 import java.net.DatagramPacket;
 import java.net.InetAddress;

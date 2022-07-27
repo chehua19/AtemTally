@@ -1,6 +1,6 @@
-package main.java;
+package tech.yakov.AtemProxy.service;
 
-import main.java.models.Client;
+import tech.yakov.AtemProxy.models.Client;
 
 import java.io.IOException;
 import java.net.*;
@@ -15,8 +15,6 @@ public class EchoClient {
     private ArrayList<Client> clients;
     private ArrayList<byte[]> bytesHello;
 
-    private boolean canAllReceive;
-
     private final byte[] commandHello = new byte[]{
             0x10, 0x14, 0x53, (byte) 0xAB,
             0x00, 0x00, 0x00, 0x00,
@@ -25,7 +23,7 @@ public class EchoClient {
             0x00, 0x00, 0x00, 0x00
     };
 
-    private byte[] commandInit = new byte[]{
+    private final byte[] commandInit = new byte[]{
             (byte)0x80, 0x0C, 0x53, (byte)0xAB,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x03, 0x00, 0x00
@@ -41,8 +39,6 @@ public class EchoClient {
             clients = new ArrayList<>();
             bytesHello = new ArrayList<>();
             returnToHello = null;
-
-            canAllReceive= true;
         } catch (SocketException | UnknownHostException ignored) { }
     }
 
