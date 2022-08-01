@@ -1,10 +1,10 @@
 package tech.yakov.AtemProxy;
 
-import tech.yakov.AtemProxy.service.EchoClient;
+import tech.yakov.AtemProxy.service.EchoClientService;
 
 public class Main {
     public static void main(String[] args) {
-        EchoClient echoClient = new EchoClient();
+        EchoClientService echoClient = new EchoClientService();
         echoClient.startListener();
     }
 }

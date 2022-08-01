@@ -6,10 +6,11 @@ import java.net.InetAddress;
 public class Client {
     private InetAddress ip;
     private int port;
-
+    private long lastSendTime;
     public Client(InetAddress ip, int port) {
         this.ip = ip;
         this.port = port;
+        lastSendTime = 0L;
     }
 
     public Client(DatagramPacket datagramPacket) {
@@ -31,5 +32,13 @@ public class Client {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public long getLastSendTime() {
+        return lastSendTime;
+    }
+
+    public void setLastSendTime(long lastSendTime) {
+        this.lastSendTime = lastSendTime;
     }
 }
