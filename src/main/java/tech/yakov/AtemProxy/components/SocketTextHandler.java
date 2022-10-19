@@ -12,7 +12,6 @@ import tech.yakov.AtemProxy.service.TallyConstellationService;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 @Component
 public class SocketTextHandler extends TextWebSocketHandler {

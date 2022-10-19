@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AtemProxyApplication {
+public class AtemTallyApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AtemProxyApplication.class, args);
+		SpringApplication.run(AtemTallyApplication.class, args);
 	}
 
 }
