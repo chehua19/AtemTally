@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
 import tech.yakov.AtemProxy.models.ConnectionsSessions;
+import tech.yakov.AtemProxy.models.Signal;
 
 import java.io.IOException;
 import java.net.*;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 @Service
 public class TallyConstellationService {
@@ -18,7 +21,8 @@ public class TallyConstellationService {
     private static final Logger logger = LoggerFactory.getLogger(TallyConstellationService.class);
     private DatagramSocket atemSocket;
     private InetAddress atemAddress;
-    private byte[] tallysArray;
+
+    private HashMap<Integer, Signal> atemSignals = new HashMap<>();
 
     @Value("${atem.ip}")
     private String hostName;
@@ -64,15 +68,14 @@ public class TallyConstellationService {
                     byte[] remotePacketId = new byte[]{outputArray[10], outputArray[11]};
 
                     if (outputArray[0] == 0x10 && outputArray[1] == 0x14) {
-                        atemSocket.send(new DatagramPacket(commandHelloAnswer, commandHelloAnswer.length, atemAddress, 9910));
+                        atemSocket.send(new DatagramPacket(commandHelloAnswer, commandHelloAnswer.length, atemAddress, 9910)); // send hello data
                     }
 
-                    //ping - pong
                     if (outputArray[0] == 40 && outputArray[1] == 12 && outputArray.length == 12){
-                        byte[] ack = new byte[]{(byte) 0x80, 0x0C, sessionId[0], sessionId[1], remotePacketId[0], remotePacketId[1], 0, 0, 0, (byte) 0xb3, 0, 0};
-                        atemSocket.send(new DatagramPacket(ack, ack.length, atemAddress, 9910));
+                        byte[] pong = new byte[]{(byte) 0x80, 0x0C, sessionId[0], sessionId[1], remotePacketId[0], remotePacketId[1], 0, 0, 0, (byte) 0xb3, 0, 0}; // pong array
+                        atemSocket.send(new DatagramPacket(pong, pong.length, atemAddress, 9910)); // sender pong data to atem
                     }else {
-                        parseTally(Arrays.copyOfRange(outputArray, 12, outputArray.length));
+                        parseDataFromAtem(Arrays.copyOfRange(outputArray, 12, outputArray.length)); // parse data from atem
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -82,74 +85,83 @@ public class TallyConstellationService {
         atemThread.start();
     }
 
-    private void parseTally(byte[] inputArr){
+    public void setSessions(ArrayList<ConnectionsSessions> sessions){
+        this.sessions = sessions;
+    }
+
+    private void parseDataFromAtem(byte[] inputArr){
         if (inputArr.length == 0) return;
-        int dataLength = inputArr[0] + (inputArr[1] & 0xFF);
+        int dataLength = (inputArr[0] << 8) + inputArr[1];
         String dataName = new String(Arrays.copyOfRange(inputArr, 4, 8));
 
         if (dataLength < 4) return;
-        if (dataName.equals("TlIn")){
-            byte[] tallyData = Arrays.copyOfRange(inputArr, 8, dataLength);
+        switch (dataName) {
+            case "TlIn":
+                byte[] tallyData = Arrays.copyOfRange(inputArr, 10, dataLength);
 
-            if (tallysArray == null) {
-                tallysArray = new byte[tallyData[1]];
-            }
+                for (int i = 1; i < atemSignals.size(); i++) {
+                    Signal currentSignal = atemSignals.get(i);
+                    if (currentSignal.getTallyState().getId() != tallyData[i-1]) {
+                        Signal.TallyState newTallyState = Signal.TallyState.getTallyState(tallyData[i-1]);
+                        atemSignals.get(i).setTallyState(newTallyState);
+                        logger.info(currentSignal.getName() + " now is " + newTallyState.name());
 
-            for (int i = 0; i < tallysArray.length; i++) {
-                if (tallysArray[i] != tallyData[i + 2]) {
-                    switch (tallyData[i + 2]) {
-                        case 0:
-                            logger.info("Cam" + i + " now is empty");
-                            break;
-                        case 1:
-                            logger.info("Cam" + i + " now is PGM");
-                            break;
-                        case 2:
-                            logger.info("Cam" + i + " now is PRV");
-                            break;
-                        case 3:
-                            logger.info("Cam" + i + " now are PGM and PRV");
-                            break;
-                        default:
-                            break;
-                    }
-                    if (sessions != null){
-                        for (ConnectionsSessions connectionsSessions: sessions) {
-                            boolean contains = false;
-                            for (String id : connectionsSessions.getIds()){
-                                if (id.equals(String.valueOf(i+1))){
-                                    contains = true;
-                                    break;
+                        if (sessions != null) {
+                            for (ConnectionsSessions connectionsSessions : sessions) {
+                                boolean contains = false;
+                                for (String id : connectionsSessions.getIds()){
+                                    if (id.equals(String.valueOf(i))){
+                                        contains = true;
+                                        break;
+                                    }
                                 }
-                            }
-                            if (contains){
-                                tallysArray = Arrays.copyOfRange(tallyData, 2, tallyData[1]+2);
-                                try {
-                                    connectionsSessions.getSession().sendMessage(new TextMessage(getTallyByCamers(connectionsSessions.getIds())));
-                                } catch (IOException | IllegalStateException e){
-                                    logger.info("Cannot send update to " +  connectionsSessions.getSession().getUri());
+                                if (contains){
+                                    try {
+                                        connectionsSessions.getSession().sendMessage(new TextMessage(getTallyByCamers(connectionsSessions.getIds())));
+                                    } catch (IOException | IllegalStateException e){
+                                        logger.info("Cannot send update to " +  connectionsSessions.getSession().getUri());
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
+                break;
+            case "InPr":
+                byte[] sourceData = Arrays.copyOfRange(inputArr, 8, dataLength);
+                int signalId = (sourceData[0] << 8) + sourceData[1];
+                String signalName = arrayToString(Arrays.copyOfRange(sourceData, 2,21));
+
+                if (signalId > 100) break;
+                if (!atemSignals.containsKey(signalId)){
+                    atemSignals.put(signalId, new Signal(signalId, signalName));
+                    logger.info(signalName + " init.");
+                }
+                break;
+            default:
+                break;
         }
 
         if (inputArr.length > dataLength){
-            parseTally(Arrays.copyOfRange(inputArr, dataLength, inputArr.length));
+            parseDataFromAtem(Arrays.copyOfRange(inputArr, dataLength, inputArr.length));
         }
     }
 
-    public String getTallyByCamera(int cameraId){
-        return String.valueOf(tallysArray[cameraId-1]);
+    private String arrayToString(byte[] arr){
+        StringBuilder sb = new StringBuilder();
+        for (byte ch: arr) {
+            if (ch == 0) break;
+            sb.append((char) ch);
+        }
+
+        return sb.toString();
     }
 
     public String getTallyByCamers(String[] camersId){
         byte[] tallys = new byte[camersId.length];
         for (int i = 0; i < camersId.length; i++) {
-            tallys[i] = tallysArray[Integer.parseInt(camersId[i])-1];
+            tallys[i] = atemSignals.get(Integer.parseInt(camersId[i])).getTallyState().getId();
         }
 
         int max = 0;
@@ -157,9 +169,5 @@ public class TallyConstellationService {
             if (tally > 0 && max != 1) max = tally;
         }
         return String.valueOf(max);
-    }
-
-    public void setSessions(ArrayList<ConnectionsSessions> sessions){
-        this.sessions = sessions;
     }
 }
