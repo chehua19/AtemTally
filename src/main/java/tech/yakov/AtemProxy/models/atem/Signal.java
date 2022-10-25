@@ -1,13 +1,15 @@
-package tech.yakov.AtemProxy.models;
+package tech.yakov.AtemProxy.models.atem;
 
 public class Signal {
     private int id;
     private String name;
+    private String label;
     private TallyState tallyState;
 
-    public Signal(int id, String name){
+    public Signal(int id, String name, String label){
         this.id = id;
         this.name = name;
+        this.label = label;
         this.tallyState = TallyState.EMPTY;
     }
 
@@ -17,6 +19,14 @@ public class Signal {
 
     public String getName(){
         return name;
+    }
+
+    public String getLabel(){
+        return label;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public TallyState getTallyState(){

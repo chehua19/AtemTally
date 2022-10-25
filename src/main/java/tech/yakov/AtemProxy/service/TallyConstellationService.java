@@ -5,15 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.TextMessage;
-import tech.yakov.AtemProxy.models.ConnectionsSessions;
-import tech.yakov.AtemProxy.models.Signal;
+import tech.yakov.AtemProxy.models.sessions.ConnectionsSessions;
+import tech.yakov.AtemProxy.models.atem.Atem;
+import tech.yakov.AtemProxy.models.atem.Signal;
 
 import java.io.IOException;
 import java.net.*;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 @Service
 public class TallyConstellationService {
@@ -21,12 +20,10 @@ public class TallyConstellationService {
     private static final Logger logger = LoggerFactory.getLogger(TallyConstellationService.class);
     private DatagramSocket atemSocket;
     private InetAddress atemAddress;
-
-    private HashMap<Integer, Signal> atemSignals = new HashMap<>();
-
+    private Atem atem;
     @Value("${atem.ip}")
     private String hostName;
-    private byte[] commandHello = new byte[]{
+    private final byte[] commandHello = new byte[]{
             0x10, 0x14, 0x53, (byte)0xAB,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x3A, 0x00, 0x00,
@@ -34,16 +31,16 @@ public class TallyConstellationService {
             0x00, 0x00, 0x00, 0x00
     };
 
-    private byte[] commandHelloAnswer = new byte[]{
+    private final byte[] commandHelloAnswer = new byte[]{
             (byte)0x80, 0x0C, 0x53, (byte)0xAB,
             0x00, 0x00, 0x00, 0x00,
             0x00, 0x03, 0x00, 0x00
     };
 
     public TallyConstellationService(){
-        try{
+        try {
             atemSocket = new DatagramSocket();
-        }catch (SocketException ignored) { }
+        } catch (SocketException ignored) { }
 
     }
 
@@ -85,25 +82,39 @@ public class TallyConstellationService {
         atemThread.start();
     }
 
-    public void setSessions(ArrayList<ConnectionsSessions> sessions){
-        this.sessions = sessions;
-    }
-
     private void parseDataFromAtem(byte[] inputArr){
         if (inputArr.length == 0) return;
         int dataLength = (inputArr[0] << 8) + inputArr[1];
         String dataName = new String(Arrays.copyOfRange(inputArr, 4, 8));
 
         if (dataLength < 4) return;
-        switch (dataName) {
-            case "TlIn":
-                byte[] tallyData = Arrays.copyOfRange(inputArr, 10, dataLength);
+        byte[] inputBuffer = Arrays.copyOfRange(inputArr, 8, dataLength);
 
-                for (int i = 1; i < atemSignals.size(); i++) {
-                    Signal currentSignal = atemSignals.get(i);
+        switch (dataName) {
+            case "_pin":
+                atem = new Atem(arrayToString(inputBuffer));
+                break;
+            case "InPr":
+                int signalId = (inputBuffer[0] << 8) + inputBuffer[1];
+                String signalName = arrayToString(Arrays.copyOfRange(inputBuffer, 2,21));
+                String signalLabel = arrayToString(Arrays.copyOfRange(inputBuffer, 22,25));
+
+                //filter output signals and Black
+                if (signalId > 100 || signalId == 0) break;
+                if (!atem.findSignal(signalId)){
+                    atem.putNewSignal(signalId, new Signal(signalId, signalName, signalLabel));
+                    logger.info(signalName + " init.");
+                }
+                break;
+
+            case "TlIn":
+                byte[] tallyData = Arrays.copyOfRange(inputBuffer, 2, dataLength);
+
+                for (int i = 1; i < atem.getNumOfInputs(); i++) {
+                    Signal currentSignal = atem.getSignalById(i);
                     if (currentSignal.getTallyState().getId() != tallyData[i-1]) {
                         Signal.TallyState newTallyState = Signal.TallyState.getTallyState(tallyData[i-1]);
-                        atemSignals.get(i).setTallyState(newTallyState);
+                        atem.getSignalById(i).setTallyState(newTallyState);
                         logger.info(currentSignal.getName() + " now is " + newTallyState.name());
 
                         if (sessions != null) {
@@ -119,7 +130,7 @@ public class TallyConstellationService {
                                     try {
                                         connectionsSessions.getSession().sendMessage(new TextMessage(getTallyByCamers(connectionsSessions.getIds())));
                                     } catch (IOException | IllegalStateException e){
-                                        logger.info("Cannot send update to " +  connectionsSessions.getSession().getUri());
+                                        logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
                                     }
                                 }
                             }
@@ -127,17 +138,6 @@ public class TallyConstellationService {
                     }
                 }
 
-                break;
-            case "InPr":
-                byte[] sourceData = Arrays.copyOfRange(inputArr, 8, dataLength);
-                int signalId = (sourceData[0] << 8) + sourceData[1];
-                String signalName = arrayToString(Arrays.copyOfRange(sourceData, 2,21));
-
-                if (signalId > 100) break;
-                if (!atemSignals.containsKey(signalId)){
-                    atemSignals.put(signalId, new Signal(signalId, signalName));
-                    logger.info(signalName + " init.");
-                }
                 break;
             default:
                 break;
@@ -161,7 +161,8 @@ public class TallyConstellationService {
     public String getTallyByCamers(String[] camersId){
         byte[] tallys = new byte[camersId.length];
         for (int i = 0; i < camersId.length; i++) {
-            tallys[i] = atemSignals.get(Integer.parseInt(camersId[i])).getTallyState().getId();
+            Signal signal = atem.getSignalById(Integer.parseInt(camersId[i]));
+            tallys[i] = signal.getTallyState().getId();
         }
 
         int max = 0;
@@ -169,5 +170,13 @@ public class TallyConstellationService {
             if (tally > 0 && max != 1) max = tally;
         }
         return String.valueOf(max);
+    }
+
+    public void setSessions(ArrayList<ConnectionsSessions> sessions){
+        this.sessions = sessions;
+    }
+
+    public Atem getAtem(){
+        return atem;
     }
 }

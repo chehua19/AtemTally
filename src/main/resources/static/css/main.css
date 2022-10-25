@@ -1,0 +1,51 @@
+body {
+    margin: auto;
+    background-color: #282828;
+}
+
+.block-wrapper{
+    margin: 50px auto;
+    width: 800px;
+}
+
+.buttons-wrapper{
+    background-color: #1f1f1f;
+    padding: 10px;
+    border: 2px solid #1a1a1a;
+    border-radius: 10px;
+
+}
+
+.block-text {
+    color: #595959;
+}
+
+.button-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    width: 10%;
+}
+
+.button-name{
+    position: absolute;
+}
+
+.button-overlay {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 10px;
+    border-radius: 4px;
+}
+
+.red-color {
+    background: rgba(255, 0, 0, 0.5);
+    box-shadow: 0 0 10px 1px rgba(255, 0, 0, 0.5);
+}
+
+.green-color {
+    background: rgba(0, 255, 0, 0.5);
+    box-shadow: 0 0 10px 1px rgba(0, 255, 0, 0.5);
+}

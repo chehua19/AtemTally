@@ -1,4 +1,4 @@
-package tech.yakov.AtemProxy.models;
+package tech.yakov.AtemProxy.models.sessions;
 
 import org.springframework.web.socket.WebSocketSession;
 

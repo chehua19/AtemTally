@@ -7,7 +7,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import tech.yakov.AtemProxy.models.ConnectionsSessions;
+import tech.yakov.AtemProxy.models.sessions.ConnectionsSessions;
 import tech.yakov.AtemProxy.service.TallyConstellationService;
 
 import javax.annotation.PostConstruct;
@@ -35,6 +35,11 @@ public class SocketTextHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         super.handleTextMessage(session, message);
+
+        /*String[] stringIds = new String[]{};
+        if (!message.getPayload().equals("all")){
+            stringIds = message.getPayload().split(",");
+        }*/
 
         String[] stringIds = message.getPayload().split(",");
         session.sendMessage(new TextMessage(tallyConstellationService.getTallyByCamers(stringIds)));
