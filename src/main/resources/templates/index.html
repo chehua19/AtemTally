@@ -19,35 +19,40 @@
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="css/main.css">
+    <script src="js/main.js"></script>
 </head>
 
 <body>
-    <div class="block-wrapper">
-        <p class="block-text">Program</p>
+    <header>
+        <span>ATEM Software control</span>
+    </header>
+    <section>
+        <div class="block-wrapper">
+            <p class="block-text">Program</p>
 
-        <div id="program-inputs" class="row buttons-wrapper">
-            <div class="col-md-1 button-wrap" th:each="signal: ${signals}">
-                <div>
-                    <img class="img-rounded" src="atem_button.png" />
-                    <div th:id="${signal.id}" class="button-overlay"></div>
+            <div id="program" class="row buttons-wrapper">
+                <div class="col-md-1 button-wrap" th:each="signal: ${signals}">
+                    <div>
+                        <img class="img-rounded" src="atem_button.png" />
+                        <div th:id="program_ + ${signal.id}" class="button-overlay"></div>
+                    </div>
+                    <span th:text="${signal.label}" class="button-name"></span>
                 </div>
-                <span th:text="${signal.label}" class="button-name"></span>
             </div>
         </div>
-    </div>
 
-    <div class="block-wrapper">
-        <p class="block-text">Preview</p>
-        <div id="preview-inputs" class="row buttons-wrapper">
-            <div class="col-md-1 button-wrap" th:each="signal: ${signals}">
-                <div>
-                    <img class="img-rounded" src="atem_button.png" />
-                    <div th:id="${signal.id}" class="button-overlay"></div>
+        <div class="block-wrapper">
+            <p class="block-text">Preview</p>
+            <div id="preview" class="row buttons-wrapper">
+                <div class="col-md-1 button-wrap" th:each="signal: ${signals}">
+                    <div>
+                        <img class="img-rounded" src="atem_button.png" />
+                        <div th:id="preview_ + ${signal.id}" class="button-overlay"></div>
+                    </div>
+                    <span th:text="${signal.label}" class="button-name"></span>
                 </div>
-                <span th:text="${signal.label}" class="button-name"></span>
             </div>
         </div>
-    </div>
-
+    </section>
 </body>
 </html>

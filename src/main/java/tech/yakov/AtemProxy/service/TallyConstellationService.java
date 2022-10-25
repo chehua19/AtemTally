@@ -1,5 +1,6 @@
 package tech.yakov.AtemProxy.service;
 
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -71,9 +72,10 @@ public class TallyConstellationService {
                     if (outputArray[0] == 40 && outputArray[1] == 12 && outputArray.length == 12){
                         byte[] pong = new byte[]{(byte) 0x80, 0x0C, sessionId[0], sessionId[1], remotePacketId[0], remotePacketId[1], 0, 0, 0, (byte) 0xb3, 0, 0}; // pong array
                         atemSocket.send(new DatagramPacket(pong, pong.length, atemAddress, 9910)); // sender pong data to atem
-                    }else {
-                        parseDataFromAtem(Arrays.copyOfRange(outputArray, 12, outputArray.length)); // parse data from atem
                     }
+
+                    parseDataFromAtem(Arrays.copyOfRange(outputArray, 12, outputArray.length)); // parse data from atem
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -84,7 +86,7 @@ public class TallyConstellationService {
 
     private void parseDataFromAtem(byte[] inputArr){
         if (inputArr.length == 0) return;
-        int dataLength = (inputArr[0] << 8) + inputArr[1];
+        int dataLength = (inputArr[0] << 8) + (inputArr[1] & 0xFF);
         String dataName = new String(Arrays.copyOfRange(inputArr, 4, 8));
 
         if (dataLength < 4) return;
@@ -97,7 +99,7 @@ public class TallyConstellationService {
             case "InPr":
                 int signalId = (inputBuffer[0] << 8) + inputBuffer[1];
                 String signalName = arrayToString(Arrays.copyOfRange(inputBuffer, 2,21));
-                String signalLabel = arrayToString(Arrays.copyOfRange(inputBuffer, 22,25));
+                String signalLabel = arrayToString(Arrays.copyOfRange(inputBuffer, 22,26));
 
                 //filter output signals and Black
                 if (signalId > 100 || signalId == 0) break;
@@ -119,7 +121,14 @@ public class TallyConstellationService {
 
                         if (sessions != null) {
                             for (ConnectionsSessions connectionsSessions : sessions) {
-                                boolean contains = false;
+                                try {
+                                    String jsonMessage = new Gson().toJson(atem.getSignalById(i));
+                                    connectionsSessions.getSession().sendMessage(new TextMessage(jsonMessage));
+                                } catch (IOException | IllegalStateException e){
+                                    logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
+                                }
+
+                                /*boolean contains = false;
                                 for (String id : connectionsSessions.getIds()){
                                     if (id.equals(String.valueOf(i))){
                                         contains = true;
@@ -132,7 +141,7 @@ public class TallyConstellationService {
                                     } catch (IOException | IllegalStateException e){
                                         logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
                                     }
-                                }
+                                }*/
                             }
                         }
                     }

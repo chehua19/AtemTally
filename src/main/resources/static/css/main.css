@@ -3,6 +3,12 @@ body {
     background-color: #282828;
 }
 
+header {
+    height: 100px;
+    width: 100%;
+    background-image: linear-gradient(#262626, #191919);
+}
+
 .block-wrapper{
     margin: 50px auto;
     width: 800px;
@@ -30,6 +36,8 @@ body {
 
 .button-name{
     position: absolute;
+    font-size: 11px;
+    font-weight: bold;
 }
 
 .button-overlay {
@@ -40,12 +48,12 @@ body {
     border-radius: 4px;
 }
 
-.red-color {
-    background: rgba(255, 0, 0, 0.5);
-    box-shadow: 0 0 10px 1px rgba(255, 0, 0, 0.5);
+.program-color {
+    background: rgba(255, 0, 0, 0.6);
+    box-shadow: 0 0 10px 1px rgba(255, 0, 0, 0.6);
 }
 
-.green-color {
-    background: rgba(0, 255, 0, 0.5);
-    box-shadow: 0 0 10px 1px rgba(0, 255, 0, 0.5);
+.preview-color {
+    background: rgba(0, 255, 0, 0.6);
+    box-shadow: 0 0 10px 1px rgba(0, 255, 0, 0.6);
 }
