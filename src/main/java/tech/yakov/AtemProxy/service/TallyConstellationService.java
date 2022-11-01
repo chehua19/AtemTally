@@ -127,21 +127,6 @@ public class TallyConstellationService {
                                 } catch (IOException | IllegalStateException e){
                                     logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
                                 }
-
-                                /*boolean contains = false;
-                                for (String id : connectionsSessions.getIds()){
-                                    if (id.equals(String.valueOf(i))){
-                                        contains = true;
-                                        break;
-                                    }
-                                }
-                                if (contains){
-                                    try {
-                                        connectionsSessions.getSession().sendMessage(new TextMessage(getTallyByCamers(connectionsSessions.getIds())));
-                                    } catch (IOException | IllegalStateException e){
-                                        logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
-                                    }
-                                }*/
                             }
                         }
                     }
@@ -165,20 +150,6 @@ public class TallyConstellationService {
         }
 
         return sb.toString();
-    }
-
-    public String getTallyByCamers(String[] camersId){
-        byte[] tallys = new byte[camersId.length];
-        for (int i = 0; i < camersId.length; i++) {
-            Signal signal = atem.getSignalById(Integer.parseInt(camersId[i]));
-            tallys[i] = signal.getTallyState().getId();
-        }
-
-        int max = 0;
-        for (byte tally : tallys) {
-            if (tally > 0 && max != 1) max = tally;
-        }
-        return String.valueOf(max);
     }
 
     public void setSessions(ArrayList<ConnectionsSessions> sessions){

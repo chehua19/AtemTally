@@ -61,6 +61,5 @@ public class Signal {
         public byte getId(){
             return id;
         }
-
     }
 }

@@ -33,18 +33,12 @@ public class SocketTextHandler extends TextWebSocketHandler {
 
         sessions.add(new ConnectionsSessions(new String[]{}, session));
         tallyConstellationService.setSessions(sessions);
-        logger.info("New Client connect. Ip: " + session.getUri());
+        logger.info("New Client connect. Ip: " + session.getHandshakeHeaders());
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         super.handleTextMessage(session, message);
-
-        /*String[] stringIds = message.getPayload().split(",");
-        session.sendMessage(new TextMessage(tallyConstellationService.getTallyByCamers(stringIds)));
-        sessions.add(new ConnectionsSessions(stringIds, session));
-        tallyConstellationService.setSessions(sessions);
-        logger.info("New Client connect. Ip: " + session.getUri());*/
     }
 
     @Override
