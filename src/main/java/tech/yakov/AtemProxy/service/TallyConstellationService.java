@@ -120,13 +120,18 @@ public class TallyConstellationService {
                         logger.info(currentSignal.getName() + " now is " + newTallyState.name());
 
                         if (sessions != null) {
-                            for (ConnectionsSessions connectionsSessions : sessions) {
+                            ArrayList<ConnectionsSessions> toDelete = new ArrayList<>();
+                            for (ConnectionsSessions connectionsSession : sessions) {
                                 try {
                                     String jsonMessage = new Gson().toJson(atem.getSignalById(i));
-                                    connectionsSessions.getSession().sendMessage(new TextMessage(jsonMessage));
+                                    connectionsSession.getSession().sendMessage(new TextMessage(jsonMessage));
                                 } catch (IOException | IllegalStateException e){
-                                    logger.error("Cannot send update to " +  connectionsSessions.getSession().getUri());
+                                    logger.error("Cannot send update to " +  connectionsSession.getSession().getUri());
+                                    toDelete.add(connectionsSession);
                                 }
+                            }
+                            for (ConnectionsSessions connectionSession: toDelete) {
+                                sessions.remove(connectionSession);
                             }
                         }
                     }
